@@ -6,6 +6,7 @@ from functools import wraps
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from flask_cors import CORS  
 import os
 
 print(datetime)
@@ -21,6 +22,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "super-secret-key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
 jwt = JWTManager(app)
+CORS(app)
 
 
 #Initialize SQLAlchemy
