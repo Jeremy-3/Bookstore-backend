@@ -83,7 +83,7 @@ class Book(db.Model):
     genre = db.Column(db.String(50), nullable=False)
     publication_date = db.Column(db.Date, nullable=True)
     description = db.Column(db.String(255), nullable=True)
-    book_img =db.Column(db.String,nullable=True)
+    book_img =db.Column(db.String,nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
 
     # Relationships
@@ -112,6 +112,7 @@ class Book(db.Model):
             'genre': self.genre,
             'publication_date': self.publication_date,
             'description': self.description,
+            'book_img': self.book_img,
             'author_id': self.author_id  # Only the author ID, not full details
         }
 

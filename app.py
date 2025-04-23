@@ -8,8 +8,7 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from flask_cors import CORS  
 import os
-
-print(datetime)
+import time
 
 
 
@@ -71,6 +70,7 @@ def register():
 
 @app.route('/login',methods=["POST"])
 def login():
+    time.sleep(5)
     data=request.get_json()
     email=data.get('email')
     password=data.get('password')
@@ -79,10 +79,10 @@ def login():
     
     if user and user.check_password(password):
        access_token=create_access_token(identity=user.id)
+       print("was here")
        return jsonify(access_token=access_token), 200
-    return jsonify({"Message":"Invalid credentials"}), 201
+    return jsonify({"Message":"Invalid credentials"}), 401
         
-
 
 # ROLE BASED ROUTES
 def token_required(allowed_roles=None):
