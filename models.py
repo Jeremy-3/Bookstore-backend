@@ -38,6 +38,7 @@ class Author(db.Model):
     __tablename__ = 'authors'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id =db.Column(db.Integer,nullable=True)
     first_name = db.Column(db.String(25), nullable=False)
     second_name = db.Column(db.String(25), nullable=False)
     email = db.Column(db.String(50), nullable=False, unique=True)
@@ -66,6 +67,7 @@ class Author(db.Model):
     def to_dict(self):
         return {
             'id': self.id,
+            'user_id': self.user_id,
             'first_name': self.first_name,
             'second_name': self.second_name,
             'email': self.email,
@@ -83,7 +85,7 @@ class Book(db.Model):
     genre = db.Column(db.String(50), nullable=False)
     publication_date = db.Column(db.Date, nullable=True)
     description = db.Column(db.String(255), nullable=True)
-    book_img =db.Column(db.String,nullable=False)
+    book_img =db.Column(db.String,nullable=True)
     author_id = db.Column(db.Integer, db.ForeignKey('authors.id'), nullable=False)
 
     # Relationships

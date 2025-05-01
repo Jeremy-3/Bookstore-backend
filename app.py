@@ -2,6 +2,7 @@ from models import db, Author, Book, Bookstore,BookstoreBook,User
 from flask_migrate import Migrate
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
+import datetime
 from functools import wraps
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token
@@ -19,7 +20,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "super-secret-key")
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=2)
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 jwt = JWTManager(app)
 CORS(app)
 
@@ -40,9 +41,9 @@ def welcome():
         'routes': {
             'Register': '/register (POST)',
             'Login': '/login (POST)',
-            'Books': '/books (GET, POST)',
-            'Authors': '/Authors (GET)',
-            'Bookstoes': '/bookstores (GET, POST)',
+            'Books': '/books (GET, POST,PATCH)',
+            'Authors': '/Authors (GET,POST,PATCH)',
+            'Bookstoes': '/bookstores (GET, POST,PATCH)',
         },
         'note': 'Make sure to include your JWT token in the headers for protected routes.'
     })
@@ -79,9 +80,25 @@ def login():
     
     if user and user.check_password(password):
        access_token=create_access_token(identity=user.id)
-       print("was here")
-       return jsonify(access_token=access_token), 200
+
+    token_payload = {
+        "user_id": user.id,
+        "username": user.username,
+        "access_token":access_token,
+        "role": user.role
+        }
+   
+    return jsonify({
+        "message": "Login successful",
+        "access_token":access_token,
+        "role": user.role  
+    }), 200
+
     return jsonify({"Message":"Invalid credentials"}), 401
+
+
+
+
         
 
 # ROLE BASED ROUTES
@@ -140,7 +157,7 @@ def get_author_id(current_user,id):
     return jsonify(author.to_dict())
 
 @app.route('/authors',methods=['POST'])
-@token_required(allowed_roles=['admin'])
+@token_required(allowed_roles=['user','admin'])
 def create_author(current_user):
     try:
         data=request.get_json()
@@ -155,7 +172,10 @@ def create_author(current_user):
             first_name=data['first_name'],
             second_name=data['second_name'],
             email=data['email'],
-            nationality=data['nationality']
+            nationality=data['nationality'],
+            user_id=current_user.id,
+            bio = data.get('bio', None)
+            
         )
         db.session.add(new_author)
         db.session.commit()
@@ -250,7 +270,7 @@ def create_book(current_user):
         data = request.get_json()
         # print(data)
         # required fields
-        required_fields = ['title', 'genre','publication_date','description','author_id']
+        required_fields = ['title', 'genre','publication_date','description','author_id','book_img']
         for field in required_fields:
             if field not in data or not data[field]:
                 return jsonify({"Error":f'Missing required field {field}'}), 400
@@ -274,6 +294,7 @@ def create_book(current_user):
             genre=data['genre'],
             publication_date=publication_date,
             description=data['description'],
+            book_img=data['book_img'],
             author_id=data['author_id']
         )
         db.session.add(new_book)
@@ -282,7 +303,7 @@ def create_book(current_user):
         return jsonify(new_book.to_dict()), 201
     
     except Exception as e:
-        return jsonify({'error':str(e)}),500
+        return jsonify({'error':str(e)}),400
 
 @app.route('/books/<int:id>',methods=['DELETE'])
 @token_required(allowed_roles=['admin'])
@@ -298,7 +319,7 @@ def delete_book(current_user, id):
 
 
 @app.route('/books/<int:id>',methods=['PATCH'])
-@token_required(allowed_roles=['admin'])
+@token_required(allowed_roles=['user','admin'])
 def update_book(current_user,id):
     book = Book.query.get(id)
     if not book:
@@ -558,16 +579,18 @@ def delete_bookstore_book(current_user,bookstore_id, book_id):
 # No roles specified, so any logged-in user can access    
     
 @app.route('/profile', methods=['GET'])
-@token_required()  
+@token_required(allowed_roles=["user","admin"])  
 def profile(current_user):
+    is_author = Author.query.filter_by(user_id=current_user.id).first() is not None
     return jsonify({
         'id': current_user.id,
         'username': current_user.username,
         'email': current_user.email,
-        'role': current_user.role
+        'role': current_user.role,
+        'is_author': is_author
     })
 
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=8000)

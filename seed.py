@@ -1,6 +1,7 @@
 from app import app
-from models import db, Author, Book, Bookstore, BookstoreBook
+from models import db, Author, Book, Bookstore, BookstoreBook,User
 from datetime import date
+
 
 def seed_data():
     # Clear existing data
@@ -8,6 +9,8 @@ def seed_data():
     db.session.query(Book).delete()
     db.session.query(Author).delete()
     db.session.query(Bookstore).delete()
+    # db.session.query(User).delete()
+    
 
     # Create Authors
     authors = [
