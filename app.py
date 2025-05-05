@@ -176,11 +176,13 @@ def create_author(current_user):
             user_id=current_user.id,
             bio = data.get('bio', None)
             
-        )
+        ) 
         db.session.add(new_author)
         db.session.commit()
+        response_data = new_author.to_dict()
+        response_data["author_id"] = new_author.id
         
-        return jsonify(new_author.to_dict()), 201
+        return jsonify(response_data), 201
     except Exception as e:
         return jsonify({"Error":str(e)}), 500
     
@@ -587,7 +589,8 @@ def profile(current_user):
         'username': current_user.username,
         'email': current_user.email,
         'role': current_user.role,
-        'is_author': is_author
+        'is_author': is_author,
+        'author_id': Author.query.filter_by(user_id=current_user.id).first().id if is_author else None
     })
 
 
