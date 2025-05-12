@@ -112,7 +112,7 @@ class Book(db.Model):
             'id': self.id,
             'title': self.title,
             'genre': self.genre,
-            'publication_date': self.publication_date,
+            'publication_date': self.publication_date.strftime("%Y-%m-%d"),
             'description': self.description,
             'book_img': self.book_img,
             'author_id': self.author_id  # Only the author ID, not full details
@@ -142,7 +142,7 @@ class Bookstore(db.Model):
             'id': self.id,
             'name': self.name,
             'location': self.location,
-            'established_date': self.established_date,
+            "established_date": self.established_date.strftime("%Y-%m-%d"),
             # List of books in this bookstore, showing only book_id and stock details
             'inventory': [{'book_id': bb.book_id, 'stock': bb.stock, 'price': bb.price} for bb in self.books]
         }
@@ -183,4 +183,47 @@ class BookstoreBook(db.Model):
             'bookstore_id': self.bookstore_id,
             'stock': self.stock,
             'price': self.price
+        }
+        
+        
+class Feedback (db.Model):
+    __tablename__ ='feedbacks'
+    
+    id=db.Column(db.Integer, primary_key=True)
+    name=db.Column(db.String, nullable=False)
+    email=db.Column(db.String, nullable=False)
+    # subject=db.Column(db.String, nullable=False)
+    message=db.Column(db.String(300), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    @validates('name')
+    def validate_name(self, key, value):
+        if len(value) < 0:
+            raise ValueError("Name must be at least 20 characters long")
+        return value
+    
+    @validates('email')
+    def validate_email(self,key,value):
+        if '@' not in value:
+            raise ValueError("Invalid email address missing '@'")
+        if len(value) > 50:
+            raise ValueError("Email address too long")
+        return value
+    
+    # @validates('subject')
+    # def validate_subject(self, key, value):
+    #     if not value or value.strip() == "":
+    #         raise ValueError("Subject cannot be empty")
+    #     if len(value) < 3:
+    #         raise ValueError("Subject must be at least 3 characters long")
+    
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            # 'subject': self.subject,
+            'message': self.message,
+            'created_at': self.created_at
         }

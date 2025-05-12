@@ -1,8 +1,8 @@
-from models import db, Author, Book, Bookstore,BookstoreBook,User
+from models import db, Author, Book, Bookstore,BookstoreBook,User,Feedback
 from flask_migrate import Migrate
 from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
-import datetime
+# import datetime
 from functools import wraps
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import create_access_token
@@ -10,6 +10,7 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from flask_cors import CORS  
 import os
 import time
+import sqlite3
 
 
 
@@ -594,6 +595,38 @@ def profile(current_user):
     })
 
 
+
+# feedback routing to store messages
+
+@app.route('/feedback',methods=["GET"])
+@token_required(allowed_roles=["admin"])
+def get_feedback(current_user):
+    feedbacks = Feedback.query.all()
+    return jsonify([feedback.to_dict() for feedback in feedbacks])
+
+@app.route('/feedback', methods=["POST"])
+def create_feedback():
+    data = request.get_json()
+    print(data)
+    required_fields =['name','email','message']
+    for field in required_fields:
+        if field not in data or not data[field] or data[field].strip() == "":
+            return jsonify({"error":f"Missing required field: {field}"}) , 400
+
+    try:
+        new_feedback=Feedback(
+        name=data['name'],
+        email=data['email'],
+        # subject=data['subject'],
+        message=data['message']
+    )
+
+        db.session.add(new_feedback)
+        db.session.commit()
+
+        return jsonify(new_feedback.to_dict()), 201
+    except Exception as e:
+       return jsonify({"error":f"Failed to create feeback:{str(e)}"}) ,500
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
