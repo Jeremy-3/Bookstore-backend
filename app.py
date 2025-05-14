@@ -10,7 +10,8 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 from flask_cors import CORS  
 import os
 import time
-import sqlite3
+from werkzeug.security import generate_password_hash
+
 
 
 
@@ -58,9 +59,13 @@ def register():
     email = data.get('email')
     password = data.get('password')
     role=data.get('role')
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"msg": "Email already in use."}), 400
+    
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        if existing_user.is_banned:
+            return jsonify({"msg": "This account is banned and cannot be registered again."}), 403
+        else:
+            return jsonify({"msg": "Email already exists"}), 400
 
     new_user = User(username=username, email=email, role=role)
     new_user.set_password(password)
@@ -79,9 +84,15 @@ def login():
     
     user = User.query.filter_by(email=email).first()
     
+    if user.is_banned:
+        return jsonify({"Message":"Your account is banned.Please contact support."}),403
+    
+    if not user or not user.check_password(password):
+        return jsonify({"Message":"Invalid credentials"}), 401
+    
     if user and user.check_password(password):
        access_token=create_access_token(identity=user.id)
-
+    
     token_payload = {
         "user_id": user.id,
         "username": user.username,
@@ -95,7 +106,7 @@ def login():
         "role": user.role  
     }), 200
 
-    return jsonify({"Message":"Invalid credentials"}), 401
+    
 
 
 
@@ -287,7 +298,7 @@ def create_book(current_user):
         try:
             print("Received_date", data.get("publication_date"))
            
-            publication_date = datetime.datetime.strptime(str(data['publication_date']), '%Y-%m-%d').date()
+            publication_date = datetime.strptime(str(data['publication_date']), '%Y-%m-%d').date()
         except ValueError:
             return jsonify({"Error": "Invalid date format. Use YYYY-MM-DD."}), 400
         
@@ -627,6 +638,99 @@ def create_feedback():
         return jsonify(new_feedback.to_dict()), 201
     except Exception as e:
        return jsonify({"error":f"Failed to create feeback:{str(e)}"}) ,500
+   
+#    crud ops for users
+@app.route('/users', methods=['GET'])
+@token_required(allowed_roles=['admin'])
+def get_users(current_user):
+    users = User.query.all()
+    return jsonify([user.to_dict() for user in users])
+
+@app.route('/users/<int:id>',methods=['GET'])
+@token_required(allowed_roles=['admin'])
+def get_user(current_user, id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"Error":f"User {id} not found"}),404
+    return jsonify(user.to_dict()),200
+
+@app.route('/users', methods=['POST'])
+@token_required(allowed_roles=['admin'])
+def create_user(current_user):
+    data = request.get_json()
+    print(data)
+    required_fields =['username','email','password_hash']
+    for field in required_fields:
+        if field not in data or not data[field]:
+            return jsonify({"error":f"Missing required field: {field}"}) , 400
+
+    try:
+        new_user=User(
+        username=data['username'],
+        email=data['email'],
+    )
+        new_user.set_password(data['password_hash'])  
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify(new_user.to_dict()), 201
+    except Exception as e:
+       return jsonify({"error":f"Failed to create user:{str(e)}"}) ,500
+   
+@app.route('/users/<int:id>', methods=['PATCH'])
+@token_required(allowed_roles=['admin'])
+def update_user(current_user, id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"Error":f"User {id} not found"}),404
+    data = request.get_json()
+
+    if 'username' in data:
+        user.username=data['username']
+    if 'email' in data:
+        user.email=data['email']
+    if 'password_hash' in data:
+        user.password_hash=generate_password_hash(data['password_hash'])
+    if 'role' in data:
+        user.role=data['role']
+
+    db.session.commit()
+    return jsonify(user.to_dict()),200
+
+@app.route('/users/<int:id>', methods=['DELETE'])
+@token_required(allowed_roles=['admin'])
+def delete_user(current_user, id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({"Error":f"User {id} not found"}),404
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({"message":f"User {user.username} deleted"}),200
+
+@app.route('/users/<int:user_id>/ban', methods=['POST'])
+@token_required(allowed_roles=['admin'])
+def ban_user(current_user, user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error": f"User with ID {user_id} not found"}), 404
+    user.is_banned = True
+    db.session.commit()
+    return jsonify({"message": f"User {user.username} has been banned."}), 200
+
+
+@app.route('/users/<int:user_id>/un-ban', methods=['POST'])
+@token_required(allowed_roles=['admin'])
+def unban_user(current_user, user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error": f"User with ID {user_id} not found"}), 404
+    user.is_banned = False
+    db.session.commit()
+    return jsonify({"message": f"User {user.username} has been unbanned."}), 200
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)

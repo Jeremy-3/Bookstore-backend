@@ -14,6 +14,7 @@ class User(db.Model,SerializerMixin):
     email=db.Column(db.String, nullable=False,unique=True)
     password_hash=db.Column(db.String(255), nullable=False)
     role=db.Column(db.String(20),nullable=False,default="user")
+    is_banned = db.Column(db.Boolean, default=False,nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 # Method to hash password before storing
@@ -27,8 +28,11 @@ class User(db.Model,SerializerMixin):
 def to_dict(self):
     return{
         'id':self.id,
+        'username':self.username,
         'email':self.email,
+        'password':self.password,
         'role':self.role,
+        'is_banned':self.is_banned,
         'created_at':self.created_at
         }
 

@@ -105,7 +105,8 @@ def seed_data():
                 
     db.session.add_all(associations)
                
-    
+    # User.query.filter_by(is_banned=None).update({User.is_banned: False})
+    # db.session.commit()
     
     
     # Commit the session
