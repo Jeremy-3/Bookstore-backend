@@ -77,21 +77,25 @@ def register():
 
 @app.route('/login',methods=["POST"])
 def login():
-    time.sleep(5)
+    time.sleep(5) # optional Delay on retrieving tickets 
     data=request.get_json()
     email=data.get('email')
     password=data.get('password')
     
     user = User.query.filter_by(email=email).first()
     
-    if user.is_banned:
-        return jsonify({"Message":"Your account is banned.Please contact support."}),403
-    
     if not user or not user.check_password(password):
         return jsonify({"Message":"Invalid credentials"}), 401
     
-    if user and user.check_password(password):
-       access_token=create_access_token(identity=user.id)
+    
+    if user.is_banned:
+        return jsonify({"Message":"Your account is banned.Please contact support."}),403
+    
+    
+    # if user and user.check_password(password):
+    #    access_token=create_access_token(identity=user.id)
+    
+    access_token = create_access_token(identity=user.id)
     
     token_payload = {
         "user_id": user.id,
@@ -733,4 +737,4 @@ def unban_user(current_user, user_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=5000)
