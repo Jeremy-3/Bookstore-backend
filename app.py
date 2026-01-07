@@ -11,7 +11,7 @@ from flask_cors import CORS
 import os
 import time
 from werkzeug.security import generate_password_hash
-
+from flask import request
 
 
 
@@ -111,6 +111,18 @@ def login():
     }), 200
 
     
+
+# Testing my authorization so i can know whether render gets the token properly
+
+
+
+@app.before_request
+def debug_headers():
+    print("AUTH HEADER:", request.headers.get("Authorization"))
+
+
+
+
 
 
 
