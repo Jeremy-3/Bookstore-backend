@@ -15,3 +15,6 @@ gunicorn = "*"
 
 [requires]
 python_full_version = "3.8.13"
+
+# to move this dependencies to requirements.txt type the following command:
+# pipenv lock -r > requirements.txt 
