@@ -23,6 +23,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "super-secret-key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
+app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+app.config["JWT_CSRF_IN_COOKIES"] = False
 jwt = JWTManager(app)
 CORS(app)
 
@@ -134,27 +137,18 @@ def token_required(allowed_roles=None):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            try:
-                # Verify JWT in request headers
-                verify_jwt_in_request()
+            verify_jwt_in_request()
 
-                # Get the current user ID from the token
-                current_user_id = get_jwt_identity()
-                current_user = db.session.get(User,current_user_id)
-                print("Extracted User ID:", current_user_id)
+            current_user_id = get_jwt_identity()
+            current_user = db.session.get(User, current_user_id)
 
+            if not current_user:
+                return jsonify({'message': 'User not found'}), 404
 
-                if not current_user:
-                    return jsonify({'message': 'User not found'}), 404
+            if allowed_roles and current_user.role not in allowed_roles:
+                return jsonify({'message': 'Unauthorized access'}), 403
 
-                # Check if the user has the required role
-                if allowed_roles and current_user.role not in allowed_roles:
-                    return jsonify({'message': 'Unauthorized access'}), 403
-
-                return f(current_user, *args, **kwargs)
-
-            except Exception as e:
-                return jsonify({'message': 'Token is invalid or expired', 'error': str(e)}), 401
+            return f(current_user, *args, **kwargs)
 
         return decorated_function
     return decorator
