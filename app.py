@@ -137,18 +137,29 @@ def token_required(allowed_roles=None):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            verify_jwt_in_request()
+            try:
+                verify_jwt_in_request(optional=True)
 
-            current_user_id = get_jwt_identity()
-            current_user = db.session.get(User, current_user_id)
+                current_user_id = get_jwt_identity()
 
-            if not current_user:
-                return jsonify({'message': 'User not found'}), 404
+                if not current_user_id:
+                    return jsonify({"message": "Missing or invalid token"}), 401
 
-            if allowed_roles and current_user.role not in allowed_roles:
-                return jsonify({'message': 'Unauthorized access'}), 403
+                current_user = db.session.get(User, current_user_id)
 
-            return f(current_user, *args, **kwargs)
+                if not current_user:
+                    return jsonify({'message': 'User not found'}), 404
+
+                if allowed_roles and current_user.role not in allowed_roles:
+                    return jsonify({'message': 'Unauthorized access'}), 403
+
+                return f(current_user, *args, **kwargs)
+
+            except Exception as e:
+                return jsonify({
+                    'message': 'Token is invalid or expired',
+                    'error': str(e)
+                }), 401
 
         return decorated_function
     return decorator
