@@ -114,12 +114,17 @@ def seed_data():
     db.session.commit()
     print("Database seeded successfully!")
 
-    user =[
-        User(username="admin", email="admin@example.com", role="admin",password_hash=generate_password_hash('admin123')),
-        User(username="author1", email="author1@example.com", role="user",password_hash=generate_password_hash('author123')),
-        User(username="user1", email="user1@example.com", role="user",password_hash=generate_password_hash('user123')),
+    users = [
+        User(username="admin", email="admin@example.com", role="admin", password_hash=generate_password_hash('admin123')),
+        User(username="author1", email="author1@example.com", role="user", password_hash=generate_password_hash('author123')),
+        User(username="user1", email="user1@example.com", role="user", password_hash=generate_password_hash('user123')),
         User(username="walice", email="walice@gmail.com", role="user", password_hash=generate_password_hash('walice123'))
     ]
+    db.session.add_all(users)
+
+    # Commit the session
+    db.session.commit()
+    print("Database seeded successfully!")
 
 
 # Add the application context here
