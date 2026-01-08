@@ -110,9 +110,7 @@ def seed_data():
     # db.session.commit()
     
     
-    # Commit the session
-    db.session.commit()
-    print("Database seeded successfully!")
+    
 
     users = [
         User(username="admin", email="admin@example.com", role="admin", password_hash=generate_password_hash('admin123')),

@@ -160,8 +160,15 @@ def token_required(allowed_roles=None):
                     'message': 'Token is invalid or expired',
                     'error': str(e)
                 }), 401
+            
 
         return decorated_function
+    
+    print("JWT identity:", get_jwt_identity())
+    current_user = db.session.get(User, get_jwt_identity())
+    print("Current user:", current_user)
+    print("User role:", getattr(current_user, "role", None))
+    
     return decorator
 
 # Admin-only route
