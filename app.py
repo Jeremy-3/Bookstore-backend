@@ -24,6 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "super-secret-key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+app.config["JWT_HEADER_NAME"] = "Authorization" 
+app.config["JWT_HEADER_TYPE"] = "Bearer"
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 app.config["JWT_CSRF_IN_COOKIES"] = False
 jwt = JWTManager(app)
@@ -134,24 +136,43 @@ def token_required(allowed_roles=None):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             try:
-                # verify_jwt_in_request(optional=True)
-
+                print("=== TOKEN DEBUG START ===")
+                print("Headers:", dict(request.headers))
+                
+                # Verify JWT
+                verify_jwt_in_request()
+                print("JWT verification passed")
+                
                 current_user_id = get_jwt_identity()
+                print(f"Current user ID: {current_user_id}")
 
                 if not current_user_id:
+                    print("ERROR: No user ID in token")
                     return jsonify({"message": "Missing or invalid token"}), 401
 
                 current_user = db.session.get(User, current_user_id)
+                print(f"Current user: {current_user}")
 
                 if not current_user:
+                    print("ERROR: User not found in database")
                     return jsonify({'message': 'User not found'}), 404
+                
+                print(f"User role: {current_user.role}")
+                print(f"Allowed roles: {allowed_roles}")
 
                 if allowed_roles and current_user.role not in allowed_roles:
+                    print("ERROR: Role not authorized")
                     return jsonify({'message': 'Unauthorized access'}), 403
 
+                print("=== TOKEN DEBUG END - SUCCESS ===")
                 return f(current_user, *args, **kwargs)
 
             except Exception as e:
+                print(f"=== TOKEN DEBUG END - EXCEPTION ===")
+                print(f"Exception type: {type(e).__name__}")
+                print(f"Exception message: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 return jsonify({
                     'message': 'Token is invalid or expired',
                     'error': str(e)
