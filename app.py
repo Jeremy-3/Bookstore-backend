@@ -83,39 +83,30 @@ def register():
     return jsonify({"msg": "User registered successfully!"}), 201
 
 
-@app.route('/login',methods=["POST"])
+@app.route('/login', methods=["POST"])
 def login():
-    time.sleep(5) # optional Delay on retrieving tickets 
-    data=request.get_json()
-    email=data.get('email')
-    password=data.get('password')
-    
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
     user = User.query.filter_by(email=email).first()
     
     if not user or not user.check_password(password):
         return jsonify({"Message":"Invalid credentials"}), 401
-    
-    
+
     if user.is_banned:
-        return jsonify({"Message":"Your account is banned.Please contact support."}),403
-    
-    
-    # if user and user.check_password(password):
-    #    access_token=create_access_token(identity=user.id)
-    
-    access_token = create_access_token(identity=user.id)
-    
-    token_payload = {
-        "user_id": user.id,
-        "username": user.username,
-        "access_token":access_token,
-        "role": user.role
-        }
-   
+        return jsonify({"Message":"Your account is banned. Please contact support."}), 403
+
+    # Include role inside JWT
+    access_token = create_access_token(
+        identity=user.id,
+        additional_claims={"role": user.role}
+    )
+
     return jsonify({
         "message": "Login successful",
-        "access_token":access_token,
-        "role": user.role  
+        "access_token": access_token,
+        "role": user.role
     }), 200
 
     
