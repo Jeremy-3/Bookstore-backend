@@ -162,6 +162,8 @@ def token_required(allowed_roles=None):
                 }), 401
 
         return decorated_function
+    
+    return decorator
 
 # Admin-only route
 @app.route('/admin', methods=['GET'])
