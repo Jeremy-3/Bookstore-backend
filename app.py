@@ -27,7 +27,12 @@ app.config["JWT_TOKEN_LOCATION"] = ["headers"]
 app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 app.config["JWT_CSRF_IN_COOKIES"] = False
 jwt = JWTManager(app)
-CORS(app)
+
+CORS(app,
+     resources={r"/*": {"origins": "*"}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     expose_headers=["Content-Type", "Authorization"])
 
 
 #Initialize SQLAlchemy
