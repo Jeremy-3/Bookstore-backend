@@ -134,7 +134,7 @@ def token_required(allowed_roles=None):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             try:
-                verify_jwt_in_request(optional=True)
+                # verify_jwt_in_request(optional=True)
 
                 current_user_id = get_jwt_identity()
 
@@ -470,7 +470,7 @@ def add_book_to_bookstore(current_user, bookstore_id):
         for item in data:
             required_fields = ['book_id', 'stock', 'price']
             for field in required_fields:
-                if token_required not in item or not item[field]:
+                if field not in item or not item[field]:
                     return jsonify({"error": f"Missing required field: {field}"}), 400
             
             # Check if the book exists
