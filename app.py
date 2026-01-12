@@ -99,9 +99,9 @@ def login():
     if user.is_banned:
         return jsonify({"Message":"Your account is banned. Please contact support."}), 403
 
-    # Include role inside JWT
+    # Convert user.id to string - THIS IS THE FIX
     access_token = create_access_token(
-        identity=user.id,
+        identity=str(user.id),  # ← Change this from user.id to str(user.id)
         additional_claims={"role": user.role}
     )
 
@@ -110,7 +110,6 @@ def login():
         "access_token": access_token,
         "role": user.role
     }), 200
-
     
 
 # Testing my authorization so i can know whether render gets the token properly
@@ -136,43 +135,25 @@ def token_required(allowed_roles=None):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             try:
-                print("=== TOKEN DEBUG START ===")
-                print("Headers:", dict(request.headers))
-                
-                # Verify JWT
                 verify_jwt_in_request()
-                print("JWT verification passed")
                 
                 current_user_id = get_jwt_identity()
-                print(f"Current user ID: {current_user_id}")
-
+                
                 if not current_user_id:
-                    print("ERROR: No user ID in token")
                     return jsonify({"message": "Missing or invalid token"}), 401
 
-                current_user = db.session.get(User, current_user_id)
-                print(f"Current user: {current_user}")
+                # Convert string back to integer
+                current_user = db.session.get(User, int(current_user_id))
 
                 if not current_user:
-                    print("ERROR: User not found in database")
                     return jsonify({'message': 'User not found'}), 404
-                
-                print(f"User role: {current_user.role}")
-                print(f"Allowed roles: {allowed_roles}")
 
                 if allowed_roles and current_user.role not in allowed_roles:
-                    print("ERROR: Role not authorized")
                     return jsonify({'message': 'Unauthorized access'}), 403
 
-                print("=== TOKEN DEBUG END - SUCCESS ===")
                 return f(current_user, *args, **kwargs)
 
             except Exception as e:
-                print(f"=== TOKEN DEBUG END - EXCEPTION ===")
-                print(f"Exception type: {type(e).__name__}")
-                print(f"Exception message: {str(e)}")
-                import traceback
-                traceback.print_exc()
                 return jsonify({
                     'message': 'Token is invalid or expired',
                     'error': str(e)
