@@ -11,7 +11,7 @@ from flask_cors import CORS
 import os
 import time
 from werkzeug.security import generate_password_hash
-from flask import request
+from flask import request,Response
 
 
 
@@ -749,6 +749,37 @@ def unban_user(current_user, user_id):
     db.session.commit()
     return jsonify({"message": f"User {user.username} has been unbanned."}), 200
 
+# ======================
+# 1️⃣ VERIFY WEBHOOK (GET)
+# ======================
+@app.route("/nylas/webhook", methods=["GET"])
+def verify_webhook():
+    """
+    Nylas sends GET ?challenge=xxxx to verify webhook
+    """
+    challenge = request.args.get("challenge", "")
+
+    if not challenge:
+        return jsonify({"error": "Missing challenge"}), 400
+
+    print("✅ Webhook verification challenge received:")
+    print(challenge)
+
+    # Must return plain text
+    return Response(challenge, status=200, mimetype="text/plain")
+
+
+# ======================
+# 2️⃣ RECEIVE WEBHOOK (POST)
+# ======================
+@app.route("/nylas/webhook", methods=["POST"])
+def receive_webhook():
+    payload = request.get_json(silent=True)
+
+    print("📩 Webhook payload received from Nylas:")
+    print(payload)
+
+    return jsonify({"status": "received"}), 200
 
 
 
